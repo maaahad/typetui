@@ -1,0 +1,1527 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>typetui — build plan</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700;800&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap"
+    rel="stylesheet">
+  <style>
+    :root {
+      --radius: 6px;
+      --font-mono: 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+      --font-sans: 'IBM Plex Sans', system-ui, sans-serif;
+    }
+
+    /* ---------- Theme tokens ---------- */
+    body[data-theme="crt-amber"] {
+      --bg: #171210;
+      --panel: #231b16;
+      --panel2: #2b2119;
+      --fg: #ffcf87;
+      --muted: #8a6a45;
+      --accent: #ff7a3d;
+      --accent-fg: #171210;
+      --good: #9cff8a;
+      --bad: #ff5c5c;
+      --border: #4a3a26;
+    }
+
+    body[data-theme="nord"] {
+      --bg: #2e3440;
+      --panel: #3b4252;
+      --panel2: #434c5e;
+      --fg: #e5e9f0;
+      --muted: #8b98b3;
+      --accent: #88c0d0;
+      --accent-fg: #1c232c;
+      --good: #a3be8c;
+      --bad: #bf616a;
+      --border: #4c566a;
+    }
+
+    body[data-theme="gruvbox"] {
+      --bg: #282828;
+      --panel: #32302f;
+      --panel2: #3c3836;
+      --fg: #ebdbb2;
+      --muted: #a89984;
+      --accent: #fe8019;
+      --accent-fg: #282828;
+      --good: #b8bb26;
+      --bad: #fb4934;
+      --border: #504945;
+    }
+
+    body[data-theme="dracula"] {
+      --bg: #282a36;
+      --panel: #2f313f;
+      --panel2: #383a4a;
+      --fg: #f8f8f2;
+      --muted: #8890b5;
+      --accent: #bd93f9;
+      --accent-fg: #20222c;
+      --good: #50fa7b;
+      --bad: #ff5555;
+      --border: #44475a;
+    }
+
+    body[data-theme="solarized-light"] {
+      --bg: #fdf6e3;
+      --panel: #eee8d5;
+      --panel2: #e4ddc4;
+      --fg: #073642;
+      --muted: #657b7b;
+      --accent: #268bd2;
+      --accent-fg: #fdf6e3;
+      --good: #719e07;
+      --bad: #dc322f;
+      --border: #cccbb2;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--fg);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      transition: background .25s ease, color .25s ease;
+    }
+
+    code,
+    .mono,
+    pre {
+      font-family: var(--font-mono);
+    }
+
+    ::selection {
+      background: var(--accent);
+      color: var(--accent-fg);
+    }
+
+    a {
+      color: var(--accent);
+    }
+
+    /* ---------- Terminal chrome shell ---------- */
+    .term-shell {
+      max-width: 1180px;
+      margin: 28px auto 90px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: var(--panel);
+      box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .6);
+    }
+
+    .term-titlebar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 16px;
+      background: var(--panel2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .dots {
+      display: flex;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 11px;
+      height: 11px;
+      border-radius: 50%;
+    }
+
+    .dot.r {
+      background: #ff5f56;
+    }
+
+    .dot.y {
+      background: #ffbd2e;
+    }
+
+    .dot.g {
+      background: #27c93f;
+    }
+
+    .term-titlebar .path {
+      margin-left: 8px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      color: var(--muted);
+    }
+
+    .term-titlebar .path b {
+      color: var(--fg);
+    }
+
+    .term-titlebar .theme-picker {
+      margin-left: auto;
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .swatch {
+      width: 22px;
+      height: 22px;
+      border-radius: 5px;
+      cursor: pointer;
+      border: 2px solid transparent;
+      position: relative;
+      display: inline-block;
+    }
+
+    .swatch[data-active="true"] {
+      border-color: var(--fg);
+    }
+
+    .swatch::after {
+      content: attr(data-label);
+      position: absolute;
+      bottom: -22px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 9.5px;
+      font-family: var(--font-mono);
+      color: var(--muted);
+      white-space: nowrap;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s;
+    }
+
+    .swatch:hover::after {
+      opacity: 1;
+    }
+
+    /* ---------- Header / hero ---------- */
+    .hero {
+      padding: 34px 40px 22px;
+      border-bottom: 1px dashed var(--border);
+    }
+
+    .hero .eyebrow {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin: 0 0 10px;
+    }
+
+    .hero h1 {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: clamp(28px, 4vw, 44px);
+      margin: 0 0 12px;
+      line-height: 1.05;
+    }
+
+    .hero h1 .blink {
+      display: inline-block;
+      width: .5em;
+      background: var(--accent);
+      animation: blink 1s steps(1) infinite;
+      margin-left: 4px;
+    }
+
+    @keyframes blink {
+      50% {
+        opacity: 0;
+      }
+    }
+
+    .hero p.sub {
+      max-width: 680px;
+      color: var(--muted);
+      font-size: 15px;
+      line-height: 1.6;
+      margin: 0 0 18px;
+    }
+
+    .hero .stat-row {
+      display: flex;
+      gap: 28px;
+      flex-wrap: wrap;
+      margin-top: 18px;
+    }
+
+    .stat {
+      font-family: var(--font-mono);
+    }
+
+    .stat .n {
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .stat .l {
+      font-size: 11px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+    }
+
+    /* ---------- Tabs ---------- */
+    .tabbar {
+      display: flex;
+      gap: 2px;
+      padding: 0 24px;
+      background: var(--panel2);
+      border-bottom: 1px solid var(--border);
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--muted);
+      background: transparent;
+      border: none;
+      padding: 14px 18px;
+      cursor: pointer;
+      white-space: nowrap;
+      border-bottom: 2px solid transparent;
+      letter-spacing: .02em;
+    }
+
+    .tab-btn .idx {
+      color: var(--muted);
+      opacity: .6;
+      margin-right: 6px;
+    }
+
+    .tab-btn:hover {
+      color: var(--fg);
+    }
+
+    .tab-btn[data-active="true"] {
+      color: var(--accent);
+      border-bottom-color: var(--accent);
+    }
+
+    .tab-panel {
+      display: none;
+      padding: 34px 40px 10px;
+    }
+
+    .tab-panel[data-active="true"] {
+      display: block;
+      animation: fade .2s ease;
+    }
+
+    @keyframes fade {
+      from {
+        opacity: 0;
+        transform: translateY(4px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    h2.section-title {
+      font-family: var(--font-mono);
+      font-size: 20px;
+      margin: 0 0 6px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    h2.section-title .bracket {
+      color: var(--accent);
+    }
+
+    p.section-desc {
+      color: var(--muted);
+      font-size: 14px;
+      max-width: 760px;
+      line-height: 1.6;
+      margin: 0 0 26px;
+    }
+
+    /* ---------- Sprint cards ---------- */
+    .sprint {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 14px;
+      background: var(--panel2);
+      overflow: hidden;
+    }
+
+    .sprint-head {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px 18px;
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .sprint-head .wk {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: 13px;
+      color: var(--accent-fg);
+      background: var(--accent);
+      padding: 5px 10px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .sprint-head .info {
+      flex: 1;
+      min-width: 0;
+    }
+
+    .sprint-head .title {
+      font-weight: 700;
+      font-size: 15px;
+      margin-bottom: 3px;
+    }
+
+    .sprint-head .phase {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .sprint-head .chev {
+      font-family: var(--font-mono);
+      color: var(--muted);
+      transition: transform .2s;
+      flex-shrink: 0;
+    }
+
+    .sprint[data-open="true"] .chev {
+      transform: rotate(90deg);
+      color: var(--accent);
+    }
+
+    .sprint-body {
+      display: none;
+      padding: 0 18px 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .sprint[data-open="true"] .sprint-body {
+      display: block;
+    }
+
+    .day-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin: 16px 0;
+    }
+
+    @media (max-width:820px) {
+      .day-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .day-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 5px;
+      padding: 12px 14px;
+    }
+
+    .day-card .d-label {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      margin-bottom: 8px;
+    }
+
+    .block {
+      margin-bottom: 10px;
+    }
+
+    .block:last-child {
+      margin-bottom: 0;
+    }
+
+    .block .b-head {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--muted);
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 3px;
+    }
+
+    .block .b-head .time {
+      color: var(--fg);
+      background: var(--panel2);
+      padding: 1px 6px;
+      border-radius: 3px;
+      font-size: 10.5px;
+    }
+
+    .block .b-text {
+      font-size: 12.8px;
+      line-height: 1.5;
+    }
+
+    .book-ref {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--accent);
+      border: 1px solid var(--border);
+      padding: 2px 7px;
+      border-radius: 4px;
+      margin-top: 6px;
+    }
+
+    .deliverable {
+      margin-top: 6px;
+      padding-top: 14px;
+      border-top: 1px dashed var(--border);
+    }
+
+    .deliverable .d-head {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--good);
+      margin-bottom: 6px;
+    }
+
+    .deliverable ul {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 13px;
+      line-height: 1.7;
+    }
+
+    .phase-divider {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin: 30px 0 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .1em;
+    }
+
+    .phase-divider::before,
+    .phase-divider::after {
+      content: "";
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ---------- Feature blocks ---------- */
+    .feature {
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      margin-bottom: 26px;
+      background: var(--panel2);
+      overflow: hidden;
+    }
+
+    .feature-head {
+      padding: 18px 22px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+    }
+
+    .feature-head .fn {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      color: var(--accent);
+      font-size: 20px;
+      flex-shrink: 0;
+    }
+
+    .feature-head .ft {
+      flex: 1;
+    }
+
+    .feature-head .ft h3 {
+      margin: 0 0 4px;
+      font-size: 16px;
+    }
+
+    .feature-head .ft p {
+      margin: 0;
+      color: var(--muted);
+      font-size: 13px;
+      line-height: 1.55;
+      max-width: 640px;
+    }
+
+    .feature-body {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 0;
+    }
+
+    @media (max-width:900px) {
+      .feature-body {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .feature-notes {
+      padding: 18px 22px;
+    }
+
+    .feature-notes ul {
+      margin: 0;
+      padding-left: 18px;
+      font-size: 13px;
+      line-height: 1.75;
+    }
+
+    .feature-notes ul li b {
+      color: var(--fg);
+    }
+
+    .feature-mock {
+      padding: 18px;
+      background: var(--bg);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-left: 1px solid var(--border);
+    }
+
+    @media (max-width:900px) {
+      .feature-mock {
+        border-left: none;
+        border-top: 1px solid var(--border);
+      }
+    }
+
+    .mockwin {
+      width: 100%;
+      max-width: 480px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--panel);
+    }
+
+    .mockwin .mw-bar {
+      display: flex;
+      gap: 6px;
+      padding: 8px 10px;
+      background: var(--panel2);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .mockwin .mw-body {
+      padding: 16px;
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      line-height: 1.9;
+    }
+
+    /* ---------- Config tab ---------- */
+    .config-wrap {
+      display: grid;
+      grid-template-columns: 1.3fr 1fr;
+      gap: 24px;
+    }
+
+    @media (max-width:900px) {
+      .config-wrap {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    pre.toml {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 18px;
+      font-size: 12.6px;
+      line-height: 1.7;
+      overflow-x: auto;
+      margin: 0;
+    }
+
+    .tok-key {
+      color: var(--accent);
+    }
+
+    .tok-str {
+      color: var(--good);
+    }
+
+    .tok-com {
+      color: var(--muted);
+      font-style: italic;
+    }
+
+    .tok-num {
+      color: var(--bad);
+    }
+
+    .field-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 12.8px;
+    }
+
+    .field-table th {
+      text-align: left;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 6px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .field-table td {
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      vertical-align: top;
+    }
+
+    .field-table td.k {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    /* ---------- Architecture ---------- */
+    .tree {
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 18px 20px;
+      font-family: var(--font-mono);
+      font-size: 12.6px;
+      line-height: 1.85;
+      overflow-x: auto;
+    }
+
+    .tree .c {
+      color: var(--muted);
+    }
+
+    .tree .f {
+      color: var(--fg);
+    }
+
+    .tree .m {
+      color: var(--accent);
+    }
+
+    .flow {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      flex-wrap: wrap;
+      margin: 20px 0;
+    }
+
+    .flow .fbox {
+      flex: 1;
+      min-width: 150px;
+      background: var(--panel2);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 14px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      text-align: center;
+    }
+
+    .flow .fbox b {
+      display: block;
+      color: var(--accent);
+      font-size: 13px;
+      margin-bottom: 4px;
+    }
+
+    .flow .arrow {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 10px;
+      color: var(--muted);
+      font-family: var(--font-mono);
+    }
+
+    .crate-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+
+    .crate-table th {
+      text-align: left;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .crate-table td {
+      padding: 9px 8px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .crate-table td.c1 {
+      font-family: var(--font-mono);
+      color: var(--accent);
+      white-space: nowrap;
+    }
+
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    @media (max-width:820px) {
+      .grid2 {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* ---------- Status bar (signature) ---------- */
+    .statusline {
+      position: sticky;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      z-index: 5;
+      display: flex;
+      align-items: stretch;
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      border-top: 1px solid var(--border);
+    }
+
+    .statusline .mode {
+      background: var(--accent);
+      color: var(--accent-fg);
+      padding: 6px 14px;
+      font-weight: 800;
+      letter-spacing: .05em;
+    }
+
+    .statusline .midbar {
+      flex: 1;
+      background: var(--panel2);
+      color: var(--muted);
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      gap: 18px;
+      overflow-x: auto;
+    }
+
+    .statusline .midbar span b {
+      color: var(--fg);
+    }
+
+    .statusline .pos {
+      background: var(--panel);
+      color: var(--muted);
+      padding: 6px 14px;
+      border-left: 1px solid var(--border);
+    }
+
+    ::-webkit-scrollbar {
+      height: 8px;
+      width: 8px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--border);
+      border-radius: 4px;
+    }
+  </style>
+</head>
+
+<body data-theme="crt-amber">
+
+  <div class="term-shell">
+    <div class="term-titlebar">
+      <div class="dots"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+      <div class="path">~/projects/<b>typetui</b> — build-plan.md</div>
+      <div class="theme-picker" id="themePicker">
+        <span class="swatch" data-theme="crt-amber" data-label="crt-amber" style="background:#ff7a3d"></span>
+        <span class="swatch" data-theme="nord" data-label="nord" style="background:#88c0d0"></span>
+        <span class="swatch" data-theme="gruvbox" data-label="gruvbox" style="background:#fe8019"></span>
+        <span class="swatch" data-theme="dracula" data-label="dracula" style="background:#bd93f9"></span>
+        <span class="swatch" data-theme="solarized-light" data-label="solarized" style="background:#268bd2"></span>
+      </div>
+    </div>
+
+    <div class="hero">
+      <p class="eyebrow">// rust + ratatui · learning-while-building</p>
+      <h1>typetui<span class="blink">&nbsp;</span></h1>
+      <p class="sub">A monkeytype-style typing trainer that lives in your terminal — built as the vehicle for learning
+        Rust.
+        Practice English words, language-specific keyword sets (Rust/C/C++/Python), and real editor &amp; multiplexer
+        muscle memory (Vim, tmux), while tracking WPM, accuracy, and per-key heat over time. Every colorscheme in the
+        switcher above is a real one you'll ship — this page is themed by the same tokens the TUI will use.</p>
+      <div class="stat-row">
+        <div class="stat">
+          <div class="n">12</div>
+          <div class="l">weekly sprints</div>
+        </div>
+        <div class="stat">
+          <div class="n">9h</div>
+          <div class="l">per week (3×3h)</div>
+        </div>
+        <div class="stat">
+          <div class="n">6</div>
+          <div class="l">core features</div>
+        </div>
+        <div class="stat">
+          <div class="n">5</div>
+          <div class="l">built-in themes</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="tabbar" id="tabbar">
+      <button class="tab-btn" data-tab="roadmap" data-active="true"><span class="idx">01</span>Roadmap</button>
+      <button class="tab-btn" data-tab="features"><span class="idx">02</span>Features</button>
+      <button class="tab-btn" data-tab="architecture"><span class="idx">03</span>Architecture</button>
+      <button class="tab-btn" data-tab="config"><span class="idx">04</span>Config (.toml)</button>
+    </div>
+
+    <!-- ================= ROADMAP TAB ================= -->
+    <div class="tab-panel" data-tab="roadmap" data-active="true">
+      <h2 class="section-title"><span class="bracket">#</span> 12-week sprint roadmap</h2>
+      <p class="section-desc">Each sprint is one calendar week. Work happens in <b>3 sessions</b> (e.g. Mon / Wed /
+        Fri),
+        <b>3 hours each</b> — 1 hour of focused Rust learning + practice (following
+        <a href="https://doc.rust-lang.org/book/" target="_blank">The Rust Book</a>), then 2 hours applying it directly
+        to
+        <code>typetui</code>. Click a week to expand the day-by-day plan. Rust concepts are sequenced so the book
+        chapter
+        you read on Monday is the exact thing you need to implement by Friday.
+      </p>
+
+      <div class="phase-divider">Phase 1 · Rust foundations + engine skeleton</div>
+      <div id="roadmap-list"></div>
+    </div>
+
+    <!-- ================= FEATURES TAB ================= -->
+    <div class="tab-panel" data-tab="features">
+      <h2 class="section-title"><span class="bracket">#</span> Feature spec</h2>
+      <p class="section-desc">Six pillars of the tool. Each has a scope note and a mock of the rendered TUI screen
+        (built from the same box-drawing / color-token language ratatui will actually render — not final pixels, but
+        accurate layout and behavior).</p>
+      <div id="features-list"></div>
+    </div>
+
+    <!-- ================= ARCHITECTURE TAB ================= -->
+    <div class="tab-panel" data-tab="architecture">
+      <h2 class="section-title"><span class="bracket">#</span> Project architecture</h2>
+      <p class="section-desc">A single-binary Rust crate, organized so each module maps to one concern. State lives in
+        one <code>App</code> struct; everything else is a pure function of it.</p>
+
+      <div class="grid2">
+        <div>
+          <h3
+            style="font-family:var(--font-mono);font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">
+            module tree</h3>
+          <div class="tree" id="tree-target"></div>
+        </div>
+        <div>
+          <h3
+            style="font-family:var(--font-mono);font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;">
+            crates</h3>
+          <table class="crate-table" id="crate-target"></table>
+        </div>
+      </div>
+
+      <h3
+        style="font-family:var(--font-mono);font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:30px;">
+        event loop / data flow</h3>
+      <div class="flow" id="flow-target"></div>
+
+      <h3
+        style="font-family:var(--font-mono);font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em;margin-top:10px;">
+        state ownership</h3>
+      <p class="section-desc" style="margin-bottom:8px;">
+        <code>App</code> owns everything: the current <code>TestSession</code> (target text, typed buffer, char-by-char
+        correctness), <code>Config</code> (loaded once from TOML at startup, hot-reloadable via a filesystem watcher
+        channel), <code>StatsStore</code> (append-only run history persisted to
+        <code>~/.local/share/typetui/history.jsonl</code>), and <code>Theme</code> (derived from config, swappable at
+        runtime the same way the picker above works). Rendering (<code>ui::draw</code>) takes <code>&amp;App</code> and
+        never mutates it — all mutation happens in <code>update()</code> in response to a
+        <code>crossterm::event::Event</code>. This keeps the borrow checker happy and makes the whole render path
+        trivially testable: feed it an <code>App</code>, snapshot the buffer.
+      </p>
+    </div>
+
+    <!-- ================= CONFIG TAB ================= -->
+    <div class="tab-panel" data-tab="config">
+      <h2 class="section-title"><span class="bracket">#</span> Configuration —
+        <code>~/.config/typetui/config.toml</code></h2>
+      <p class="section-desc">Parsed with <code>serde</code> + <code>toml</code> into a typed <code>Config</code>
+        struct at startup, with <code>#[serde(default)]</code> on every field so a partial or missing file still works.
+        CLI flags (via <code>clap</code>) override individual fields for one-off runs, e.g. <code>typetui --mode words
+          --lang cpp --time 30</code>.</p>
+      <div class="config-wrap">
+        <pre class="toml" id="toml-target"></pre>
+        <table class="field-table" id="field-target"></table>
+      </div>
+    </div>
+  </div>
+
+  <div class="statusline">
+    <div class="mode" id="slMode">-- ROADMAP --</div>
+    <div class="midbar">
+      <span>theme: <b id="slTheme">crt-amber</b></span>
+      <span>week: <b id="slWeek">—</b></span>
+      <span>1h learn / 2h build · 3×/wk</span>
+    </div>
+    <div class="pos" id="slPos">01,1</div>
+  </div>
+
+  <script>
+    /* ================= THEME SWITCH ================= */
+    const themePicker = document.getElementById('themePicker');
+    const body = document.body;
+    function setTheme(t) {
+      body.setAttribute('data-theme', t);
+      [...themePicker.children].forEach(s => s.setAttribute('data-active', s.dataset.theme === t));
+      document.getElementById('slTheme').textContent = t;
+    }
+    themePicker.addEventListener('click', e => {
+      const s = e.target.closest('.swatch'); if (!s) return;
+      setTheme(s.dataset.theme);
+    });
+    setTheme('crt-amber');
+
+    /* ================= TABS ================= */
+    const tabbar = document.getElementById('tabbar');
+    const panels = [...document.querySelectorAll('.tab-panel')];
+    const modeNames = {roadmap: 'ROADMAP', features: 'FEATURES', architecture: 'ARCH', config: 'CONFIG'};
+    tabbar.addEventListener('click', e => {
+      const btn = e.target.closest('.tab-btn'); if (!btn) return;
+      [...tabbar.children].forEach(b => b.setAttribute('data-active', b === btn));
+      panels.forEach(p => p.setAttribute('data-active', p.dataset.tab === btn.dataset.tab));
+      document.getElementById('slMode').textContent = '-- ' + modeNames[btn.dataset.tab] + ' --';
+      document.getElementById('slPos').textContent = (['roadmap', 'features', 'architecture', 'config'].indexOf(btn.dataset.tab) + 1).toString().padStart(2, '0') + ',1';
+    });
+
+    /* ================= ROADMAP DATA ================= */
+    const sprints = [
+      {
+        wk: 1, phase: 'Foundations', title: 'Toolchain, ownership basics & a window that opens',
+        book: ['Ch.1 Getting Started', 'Ch.2 Guessing Game', 'Ch.3 Common Concepts'],
+        days: [
+          {
+            label: 'Day 1 · Mon', learn: 'Install rustup, cargo basics, variables, data types, functions (Book Ch.1–3.3).',
+            build: 'cargo new typetui. Add ratatui + crossterm. Write the smallest possible program: enter raw mode, alternate screen, draw one Paragraph("hello"), wait for `q`, restore terminal.'
+          },
+          {
+            label: 'Day 2 · Wed', learn: 'Control flow, loops, ownership & borrowing intro (Ch.3.5, Ch.4.1–4.2).',
+            build: 'Wrap the terminal setup/teardown in a Terminal guard struct (RAII via Drop) so the terminal always restores even on panic.'
+          },
+          {
+            label: 'Day 3 · Fri', learn: 'References & slices (Ch.4.2–4.3).',
+            build: 'Build the main loop skeleton: loop { terminal.draw(...); if event::poll(timeout)? { match event::read()? { ... } } }. Quit on Esc/q/Ctrl-C.'
+          },
+        ],
+        deliverable: ['A `cargo run` that opens a clean full-screen terminal app and exits cleanly on any key.', 'Repo initialized with .gitignore, README stub.']
+      },
+      {
+        wk: 2, phase: 'Foundations', title: 'Structs, enums & rendering real words on screen',
+        book: ['Ch.5 Structs', 'Ch.6 Enums & Pattern Matching'],
+        days: [
+          {
+            label: 'Day 1 · Mon', learn: 'Defining & instantiating structs, methods via impl (Ch.5).',
+            build: 'Define `struct App { words: Vec<String>, cursor: usize }`. Hardcode a Vec of 30 English words.'
+          },
+          {
+            label: 'Day 2 · Wed', learn: 'Enums, Option<T>, match expressions (Ch.6).',
+            build: 'Model each character as `enum CharState { Pending, Correct, Wrong, Extra }`. Render the word list as a ratatui Paragraph with styled Spans per CharState.'
+          },
+          {
+            label: 'Day 3 · Fri', learn: 'if let / while let shorthand (Ch.6.3).',
+            build: 'Use Layout to split the frame into header / typing-area / footer chunks. Style the current word with an underline and the cursor with a reversed-color block.'
+          },
+        ],
+        deliverable: ['Static word list renders with correct box layout.', 'CharState enum in place, ready to be driven by real keystrokes next week.']
+      },
+      {
+        wk: 3, phase: 'Foundations', title: 'Real keystroke handling & error-safe input',
+        book: ['Ch.8 Collections (String/Vec)', 'Ch.9 Error Handling'],
+        days: [
+          {
+            label: 'Day 1 · Mon', learn: 'Vec<T>, String vs &str, UTF-8 gotchas (Ch.8.1–8.2).',
+            build: 'Handle KeyCode::Char(c): push to a `typed: String` buffer and recompute CharState for the current word on every keystroke.'
+          },
+          {
+            label: 'Day 2 · Wed', learn: 'Result<T,E>, the ? operator, panic! vs recoverable errors (Ch.9).',
+            build: 'Handle Backspace (remove last char, only within current word) and Space (commit word, advance index). Wrap terminal I/O calls in `?` returning `anyhow::Result<()>`.'
+          },
+          {
+            label: 'Day 3 · Fri', learn: 'unwrap/expect discipline — when each is acceptable (Ch.9.3).',
+            build: 'Add a `Terminated` app state so a fully-typed word list ends the session instead of panicking on out-of-bounds index.'
+          },
+        ],
+        deliverable: ['A fully working single-pass typing test: type through hardcoded words with live correct/incorrect coloring.']
+      },
+      {
+        wk: 4, phase: 'Foundations', title: 'Modules & splitting the growing binary',
+        book: ['Ch.7 Packages, Crates & Modules'],
+        days: [
+          {
+            label: 'Day 1 · Mon', learn: 'mod, pub, use, the module tree, separating lib.rs from main.rs (Ch.7.1–7.3).',
+            build: 'Split main.rs into app.rs (state), ui.rs (rendering), event.rs (input handling), main.rs (wiring only).'
+          },
+          {
+            label: 'Day 2 · Wed', learn: 'Re-exports with pub use, workspace-style organization (Ch.7.4–7.5).',
+            build: 'Introduce `words/` module with a `generator.rs` that produces a random word list from a static English wordlist (embedded via include_str!).'
+          },
+          {
+            label: 'Day 3 · Fri', learn: 'Reading module docs on docs.rs for ratatui/crossterm.',
+            build: 'Add `rand` crate; shuffle + sample N words per session. Add a config-free constant SESSION_LEN for now.'
+          },
+        ],
+        deliverable: ['Clean multi-file module structure matching the Architecture tab.', 'Random word generation replaces the hardcoded list.']
+      },
+      {
+        wk: 5, phase: 'Personalization', title: 'Traits & the theme (colorscheme) system',
+        book: ['Ch.10.1–10.2 Generics & Traits'],
+        days: [
+          {
+            label: 'Day 1 · Mon', learn: 'Defining traits, implementing traits on types, trait objects vs generics (Ch.10.1–10.2).',
+            build: 'Define `struct Theme { bg, fg, accent, correct, wrong, muted: Color }` and 3 hardcoded const Themes (Amber, Nord, Gruvbox).'
+          },
+          {
+            label: 'Day 2 · Wed', learn: 'Default trait, deriving common traits (Ch.10.2, Ch.5 revisited).',
+            build: 'Wire Theme into every Style::default().fg(theme.x) call in ui.rs. Add a keybinding (Ctrl-T) that cycles the active theme at runtime.'
+          },
+          {
+            label: 'Day 3 · Fri', learn: 'impl Trait as return/arg position.',
+            build: "Add 2 more themes (Dracula, Solarized) to reach the 5 shown in this page's picker. Persist last-used theme name in memory for the session."
+          },
+        ],
+        deliverable: ['Live in-app theme switching, matching the 5 themes in this document.']
+      },
+      {
+        wk: 6, phase: 'Personalization', title: 'Iterators/closures — custom text & language keyword banks',
+        book: ['Ch.13 Closures & Iterators'],
+        days: [
+          {
+            label: 'Day 1 · Mon', learn: 'Closures capturing environment, Fn/FnMut/FnOnce (Ch.13.1).',
+            build: 'Add `enum Corpus { English, Custom(String), Language(Lang) }` and an `enum Lang { Rust, C, Cpp, Python }`.'
+          },
+          {
+            label: 'Day 2 · Wed', learn: 'Iterator adapters: map/filter/take/collect, zip (Ch.13.2–13.4).',
+            build: 'Embed keyword lists per language (keywords, common std types, snippet fragments) as static arrays; write a generator using iterator chains (`.choose_multiple`, `.cycle().take(n)`).'
+          },
+          {
+            label: 'Day 3 · Fri', learn: 'Custom iterators: implementing the Iterator trait.',
+            build: 'Add "paste custom text" mode: read from a `--file` CLI arg or stdin pipe, tokenize into practice chunks, implement a `WordFeed` iterator wrapping any corpus source uniformly.'
+          },
+        ],
+        deliverable: ['Mode switch between English words / custom pasted text / language-keyword practice (Rust, C, C++, Python).']
+      },
+      {
+        wk: 7, phase: 'Metrics', title: 'Shared state & live statistics engine',
+        book: ['Ch.15.1–15.2 Box<T> & Rc<T>/RefCell<T>'],
+        days: [
+          {
+            label: 'Day 1 · Mon', learn: 'Box<T> for recursive/heap types, when you need it (Ch.15.1).',
+            build: 'Define `struct Stats { keystrokes: u32, correct: u32, wrong: u32, started_at: Instant }`.'
+          },
+          {
+            label: 'Day 2 · Wed', learn: 'Rc<T> and RefCell<T> for shared mutable access, interior mutability (Ch.15.2, 15.4).',
+            build: 'Compute live WPM = (correct_chars/5) / elapsed_minutes and raw WPM (incl. errors) every render tick; show both in the footer bar.'
+          },
+          {
+            label: 'Day 3 · Fri', learn: 'When to prefer plain ownership over Rc/RefCell (design discussion, re-reading Ch.4).',
+            build: 'Add per-key error counters: `HashMap<char, u32>` incremented whenever that key is mis-typed — this feeds the heatmap later.'
+          },
+        ],
+        deliverable: ['Real-time WPM, accuracy %, and a per-character error map are tracked during a session.']
+      },
+      {
+        wk: 8, phase: 'Metrics', title: 'Concurrency — a non-blocking countdown timer',
+        book: ['Ch.16.1–16.2 Threads & Message Passing'],
+        days: [
+          {
+            label: 'Day 1 · Mon', learn: 'thread::spawn, move closures, joining threads (Ch.16.1).',
+            build: 'Spawn a ticker thread that sends a `Tick` message every 250ms via mpsc::channel, independent of key-polling.'
+          },
+          {
+            label: 'Day 2 · Wed', learn: 'mpsc channels, sender/receiver ownership (Ch.16.2).',
+            build: 'Merge Tick events and crossterm key events into one `enum AppEvent` polled in the main loop (select-style via try_recv + poll).'
+          },
+          {
+            label: 'Day 3 · Fri', learn: "Mutex<T> & Arc<T> basics, why we likely won't need them here (Ch.16.3, contrast with channel approach).",
+            build: 'Implement the countdown-timer test mode (e.g. 15/30/60/120s) that auto-ends the session and freezes stats when time is up.'
+          },
+        ],
+        deliverable: ['Two test modes: fixed word-count and fixed-time countdown, both fully driven by the tick channel.']
+      },
+      {
+        wk: 9, phase: 'Metrics', title: 'Testing & the .toml configuration system',
+        book: ['Ch.11 Automated Tests'],
+        days: [
+          {
+            label: 'Day 1 · Mon', learn: '#[test], assert!/assert_eq!, #[should_panic] (Ch.11.1).',
+            build: 'Add serde + toml crates; define `Config` struct mirroring the Config tab, with #[serde(default)] everywhere.'
+          },
+          {
+            label: 'Day 2 · Wed', learn: 'Organizing tests, unit vs integration tests, test-only modules (Ch.11.3).',
+            build: 'Write unit tests for: WPM calc at known inputs, word generator determinism with a seeded RNG, TOML round-trip (serialize → parse → equal).'
+          },
+          {
+            label: 'Day 3 · Fri', learn: 'cargo test filtering, test doubles for I/O (mocking the clock/RNG).',
+            build: 'Load config from `~/.config/typetui/config.toml` (via the `dirs` crate) at startup; fall back to defaults; add `clap` CLI overrides.'
+          },
+        ],
+        deliverable: ['`cargo test` passes with real coverage on scoring logic.', 'Config file loads, overrides theme/mode/language/time on startup.']
+      },
+      {
+        wk: 10, phase: 'Depth', title: 'Results screen & progress charts',
+        book: ['Ch.17/18 or the "OOP-ish" & pattern-matching deep dive chapters'],
+        days: [
+          {
+            label: 'Day 1 · Mon', learn: 'Trait objects (dyn Trait) for polymorphic behavior, when Rust favors enums instead (Ch.18.1–18.2).',
+            build: 'Build the post-session Results screen: final WPM, raw WPM, accuracy, consistency (stdev of per-word WPM).'
+          },
+          {
+            label: 'Day 2 · Wed', learn: 'Advanced match patterns: guards, bindings, ranges (Ch.18.3).',
+            build: 'Persist each run as one JSON line to history.jsonl (serde_json); load history on startup for trend display.'
+          },
+          {
+            label: 'Day 3 · Fri', learn: 'Newtype pattern & type-safety for domain values (e.g. Wpm(f64)).',
+            build: 'Render a WPM-over-time sparkline/Chart widget (ratatui `Chart`/`Sparkline`) sourced from history.jsonl.'
+          },
+        ],
+        deliverable: ['Results screen with historical WPM trend chart across all past sessions.']
+      },
+      {
+        wk: 11, phase: 'Depth', title: 'Keybinding practice modes: Vim & tmux drills',
+        book: ['Revisit Ch.10 generics — building one drill engine that serves multiple keymaps'],
+        days: [
+          {
+            label: 'Day 1 · Mon', learn: 'Generic functions/structs over a `Drill` trait so Vim and tmux drills reuse one engine.',
+            build: 'Define `trait Drill { fn prompt(&self) -> String; fn expected_keys(&self) -> &[Key]; }` and a `VimMotionDrill` (e.g. "delete inner word" → dw/diw/ciw).'
+          },
+          {
+            label: 'Day 2 · Wed', learn: "Reading crossterm's modifier/key-event docs for chorded input (Ctrl/Alt combos, key-up vs key-down where supported).",
+            build: 'Implement chord matching for multi-key sequences (e.g. `g g`, `d d`) with a timeout window, and a `TmuxDrill` (prefix `Ctrl-b` + pane/window commands).'
+          },
+          {
+            label: 'Day 3 · Fri', learn: 'Trait bounds & where clauses for the scoring function shared across drill types.',
+            build: 'Score drills by time-to-correct-chord + retries; surface a per-command accuracy table (which motions are still slow).'
+          },
+        ],
+        deliverable: ['Selectable practice mode for Vim motions and tmux prefix commands, each scored independently of the word-typing metrics.']
+      },
+      {
+        wk: 12, phase: 'Depth', title: 'Keyboard heatmap, polish & release',
+        book: ['Ch.14 More on Cargo & crates.io — packaging for release'],
+        days: [
+          {
+            label: 'Day 1 · Mon', learn: 'Release profiles, cargo.toml metadata, feature flags (Ch.14.1–14.3).',
+            build: 'Build the full keyboard heatmap view: static QWERTY layout drawn with ratatui `Canvas`/blocks, cells colored by error-frequency from history.jsonl.'
+          },
+          {
+            label: 'Day 2 · Wed', learn: 'Publishing checklist, semantic versioning, writing a good crate README.',
+            build: 'Add a metrics dashboard tab in-app: WPM trend, accuracy trend, top-10 error keys, session count/streak — aggregated from full history.'
+          },
+          {
+            label: 'Day 3 · Fri', learn: 'Final read-through: ownership/error-handling review across the whole codebase.',
+            build: 'Polish: help overlay (`?`), graceful panic hook that restores the terminal, `cargo clippy` clean, tag v0.1.0.'
+          },
+        ],
+        deliverable: ['v0.1.0 released: all 6 features working end-to-end, keyboard heatmap live, clippy-clean, README with GIF/screenshots.']
+      },
+    ];
+
+    const phaseBreaks = {5: 'Phase 2 · Personalization — themes, custom text & language keywords', 7: 'Phase 3 · Metrics engine — stats, timers, config & tests', 10: 'Phase 4 · Depth — history, keybinding drills, heatmap & release'};
+
+    const roadmapList = document.getElementById('roadmap-list');
+    sprints.forEach(s => {
+      if (phaseBreaks[s.wk]) {
+        const div = document.createElement('div');
+        div.className = 'phase-divider'; div.textContent = phaseBreaks[s.wk];
+        roadmapList.appendChild(div);
+      }
+      const card = document.createElement('div');
+      card.className = 'sprint'; card.dataset.open = s.wk === 1 ? 'true' : 'false';
+      card.innerHTML = `
+    <div class="sprint-head">
+      <div class="wk">WK ${String(s.wk).padStart(2, '0')}</div>
+      <div class="info">
+        <div class="title">${s.title}</div>
+        <div class="phase">${s.phase}</div>
+      </div>
+      <div class="chev">&#9656;</div>
+    </div>
+    <div class="sprint-body">
+      <div class="day-grid">
+        ${s.days.map(d => `
+          <div class="day-card">
+            <div class="d-label">${d.label}</div>
+            <div class="block">
+              <div class="b-head"><span>learn</span><span class="time">1h</span></div>
+              <div class="b-text">${d.learn}</div>
+            </div>
+            <div class="block">
+              <div class="b-head"><span>build</span><span class="time">2h</span></div>
+              <div class="b-text">${d.build}</div>
+            </div>
+          </div>`).join('')}
+      </div>
+      <div class="book-ref">rust book: ${s.book.join(' · ')}</div>
+      <div class="deliverable">
+        <div class="d-head">✓ end-of-week deliverable</div>
+        <ul>${s.deliverable.map(x => `<li>${x}</li>`).join('')}</ul>
+      </div>
+    </div>`;
+      card.querySelector('.sprint-head').addEventListener('click', () => {
+        const open = card.dataset.open === 'true';
+        card.dataset.open = open ? 'false' : 'true';
+        document.getElementById('slWeek').textContent = 'WK' + String(s.wk).padStart(2, '0');
+      });
+      roadmapList.appendChild(card);
+    });
+
+    /* ================= FEATURES DATA ================= */
+    const features = [
+      {
+        n: '01', title: 'Core typing test', desc: 'The monkeytype-style core loop: a stream of target text, live per-character correctness, caret, running WPM/accuracy in the footer.',
+        notes: ['<b>Modes:</b> word-count (10/25/50/100) or timed countdown (15/30/60/120s).',
+          '<b>Rendering:</b> Paragraph of Spans — Correct = fg(good), Wrong = fg(bad)+underline, Pending = fg(muted), current char = reversed style as caret.',
+          "<b>Extras:</b> punctuation & numbers toggles, like monkeytype's option row."],
+        mock: `<div class="mw-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+  <div class="mw-body"><div style="color:var(--muted)">english · 30s · punctuation:off</div><br>
+  <span style="color:var(--muted)">the quick brown</span> <span style="text-decoration:underline;color:var(--bad)">fox</span> <span style="background:var(--fg);color:var(--bg)">j</span><span style="color:var(--muted)">umps over the lazy dog while</span><br><br>
+  <div style="color:var(--accent)">wpm 78&nbsp;&nbsp;&nbsp;acc 96%&nbsp;&nbsp;&nbsp;00:14</div></div>`
+      },
+      {
+        n: '02', title: 'Custom text & language-keyword practice', desc: 'Practice real language syntax instead of prose — pick Rust, C, C++ or Python and drill their keywords, common std types, and idiomatic snippet fragments. Or paste/pipe in your own text.',
+        notes: ['<b>Corpus enum:</b> English · Custom(paste/file/stdin) · Language(Rust|C|Cpp|Python).',
+          '<b>Keyword banks</b> shipped as embedded static word lists per language, plus a small curated snippet set (e.g. `fn main() {`, `impl&lt;T&gt;`, `#include &lt;vector&gt;`).',
+          '<b>Config:</b> default language settable in config.toml; switchable at runtime with a mode picker overlay.'],
+        mock: `<div class="mw-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+  <div class="mw-body"><div style="color:var(--muted)">mode: language · rust</div><br>
+  <span style="color:var(--good)">impl</span> <span style="color:var(--muted)">Iterator</span> <span style="color:var(--good)">for</span> <span style="color:var(--muted)">WordFeed</span> <span style="background:var(--fg);color:var(--bg)">{</span><span style="color:var(--muted)">&nbsp;type Item = char; fn next</span><br><br>
+  <div style="color:var(--accent)">wpm 41&nbsp;&nbsp;&nbsp;acc 91%&nbsp;&nbsp;&nbsp;lang: rust</div></div>`
+      },
+      {
+        n: '03', title: 'Colorscheme switcher', desc: "Runtime theme cycling (Ctrl-T) plus a picker overlay — the exact same tokens driving this document's theme picker above.",
+        notes: ['Ships with <b>5 themes</b>: CRT Amber, Nord, Gruvbox, Dracula, Solarized Light.',
+          '<code>Theme</code> struct: bg / fg / accent / correct / wrong / muted colors, all <code>ratatui::style::Color</code>.',
+          'Custom themes definable in config.toml under <code>[theme.custom]</code> — see Config tab.'],
+        mock: `<div class="mw-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+  <div class="mw-body"><div style="color:var(--accent)">▸ select theme</div>
+  <div>&nbsp;&nbsp;crt-amber &nbsp;<span style="color:var(--muted)">●</span></div>
+  <div style="background:var(--accent);color:var(--accent-fg)">&nbsp;&nbsp;nord &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;●</div>
+  <div>&nbsp;&nbsp;gruvbox &nbsp;&nbsp;●</div>
+  <div>&nbsp;&nbsp;dracula &nbsp;&nbsp;●</div></div>`
+      },
+      {
+        n: '04', title: 'Keybinding drills — Vim &amp; tmux', desc: 'A separate practice mode that scores muscle memory for editor motions and multiplexer commands instead of prose, using the same engine via a shared Drill trait.',
+        notes: ['<b>Vim drills:</b> motions (dw, ciw, f/t + char, gg/G), operator+motion combos, counts (3dw).',
+          '<b>Tmux drills:</b> prefix key (default Ctrl-b) + pane/window/session commands, timed chord recognition.',
+          'Extensible to Neovim leader-key maps or shell/readline bindings (Ctrl-A/E/W) via the same trait.'],
+        mock: `<div class="mw-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+  <div class="mw-body"><div style="color:var(--muted)">drill: vim motions</div><br>
+  <div>delete inner word →&nbsp;<span style="background:var(--good);color:var(--bg)">diw</span></div>
+  <div style="color:var(--muted)">next: jump to line end</div><br>
+  <div style="color:var(--accent)">avg chord time 0.62s&nbsp;&nbsp;12/14 correct</div></div>`
+      },
+      {
+        n: '05', title: 'Metrics dashboard &amp; keyboard heatmap', desc: 'Every session is appended to a local history file; a dashboard tab aggregates trend lines, and a physical keyboard is rendered with per-key error intensity as color.',
+        notes: ['<b>Tracked:</b> WPM, raw WPM, accuracy %, consistency (stdev), error count, session length, timestamp.',
+          '<b>Heatmap:</b> QWERTY layout drawn with block cells; color intensity = error rate for that key across all history.',
+          '<b>Storage:</b> append-only <code>history.jsonl</code> in the local data dir — no database needed.'],
+        mock: `<div class="mw-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+  <div class="mw-body">
+  <div>q&nbsp;w&nbsp;<span style="background:var(--bad);color:var(--bg)">e</span>&nbsp;r&nbsp;t&nbsp;y&nbsp;u&nbsp;i&nbsp;<span style="background:var(--accent);color:var(--accent-fg)">o</span>&nbsp;p</div>
+  <div>&nbsp;a&nbsp;s&nbsp;<span style="background:var(--accent);color:var(--accent-fg)">d</span>&nbsp;f&nbsp;g&nbsp;h&nbsp;j&nbsp;k&nbsp;l</div>
+  <div>&nbsp;&nbsp;z&nbsp;x&nbsp;c&nbsp;v&nbsp;<span style="background:var(--bad);color:var(--bg)">b</span>&nbsp;n&nbsp;m</div><br>
+  <div style="color:var(--muted)">avg wpm 30d: <span style="color:var(--accent)">▁▂▃▃▅▆▆▇</span></div></div>`
+      },
+      {
+        n: '06', title: 'TOML configuration', desc: 'Every default — theme, mode, language, time, keybinding set — is overridable from a single human-editable config file, with CLI flags for one-off overrides.',
+        notes: ['Parsed with <code>serde</code> derive + the <code>toml</code> crate into a typed struct.',
+          'All fields <code>#[serde(default)]</code> so a partial file (or none at all) still works.',
+          'See the <b>Config tab</b> for the full annotated example.'],
+        mock: `<div class="mw-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span></div>
+  <div class="mw-body"><span style="color:var(--accent)">[test]</span><br>mode&nbsp;=&nbsp;<span style="color:var(--good)">"words"</span><br>word_count&nbsp;=&nbsp;<span style="color:var(--bad)">50</span><br><span style="color:var(--accent)">[theme]</span><br>name&nbsp;=&nbsp;<span style="color:var(--good)">"crt-amber"</span></div>`
+      },
+    ];
+
+    const featuresList = document.getElementById('features-list');
+    features.forEach(f => {
+      const el = document.createElement('div');
+      el.className = 'feature';
+      el.innerHTML = `
+    <div class="feature-head">
+      <div class="fn">${f.n}</div>
+      <div class="ft"><h3>${f.title}</h3><p>${f.desc}</p></div>
+    </div>
+    <div class="feature-body">
+      <div class="feature-notes"><ul>${f.notes.map(n => `<li>${n}</li>`).join('')}</ul></div>
+      <div class="feature-mock"><div class="mockwin">${f.mock}</div></div>
+    </div>`;
+      featuresList.appendChild(el);
+    });
+
+    /* ================= ARCHITECTURE DATA ================= */
+    document.getElementById('tree-target').innerHTML = `
+<span class="f">typetui/</span>
+<span class="c">├──</span> Cargo.toml
+<span class="c">├──</span> config.example.toml
+<span class="c">└──</span> <span class="f">src/</span>
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;├──</span> main.rs&nbsp;&nbsp;<span class="c">// wiring: init term, load config, run loop</span>
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;├──</span> <span class="m">app.rs</span>&nbsp;&nbsp;&nbsp;<span class="c">// App struct, update(event), the single source of truth</span>
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;├──</span> <span class="m">event.rs</span>&nbsp;<span class="c">// crossterm polling + tick-thread channel merge</span>
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;├──</span> <span class="m">ui/</span>
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;</span>├── mod.rs&nbsp;&nbsp;<span class="c">// draw(frame, &App) dispatch</span>
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;</span>├── typing.rs
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;</span>├── results.rs
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;</span>├── dashboard.rs
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;</span>└── heatmap.rs
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;├──</span> <span class="m">words/</span>
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;</span>├── mod.rs&nbsp;&nbsp;<span class="c">// Corpus enum, WordFeed iterator</span>
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;</span>├── english.rs
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;│&nbsp;&nbsp;&nbsp;</span>└── lang/ (rust.rs, c.rs, cpp.rs, python.rs)
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;├──</span> <span class="m">drills/</span>&nbsp;&nbsp;<span class="c">// Drill trait, vim.rs, tmux.rs</span>
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;├──</span> <span class="m">stats.rs</span>&nbsp;<span class="c">// WPM/accuracy calc, HashMap&lt;char,u32&gt; error map</span>
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;├──</span> <span class="m">history.rs</span>&nbsp;<span class="c">// append/read history.jsonl</span>
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;├──</span> <span class="m">theme.rs</span>&nbsp;<span class="c">// Theme struct + 5 built-ins + custom from config</span>
+<span class="c">&nbsp;&nbsp;&nbsp;&nbsp;└──</span> <span class="m">config.rs</span>&nbsp;<span class="c">// Config struct, load()/merge CLI overrides</span>
+<span class="c">└──</span> <span class="f">tests/</span>&nbsp;&nbsp;<span class="c">// integration tests: stats, config round-trip, word gen</span>`;
+
+    const crates = [
+      ['ratatui', 'TUI widget/layout/rendering framework'],
+      ['crossterm', 'Cross-platform terminal backend: raw mode, events, colors'],
+      ['serde + toml', 'Typed parsing of config.toml'],
+      ['serde_json', 'history.jsonl read/write'],
+      ['clap', 'CLI flag parsing & override merging'],
+      ['rand', 'Word/keyword sampling, seedable for tests'],
+      ['anyhow', 'Ergonomic error propagation with `?` at the app boundary'],
+      ['dirs', 'Cross-platform config/data directory resolution'],
+    ];
+    document.getElementById('crate-target').innerHTML = `<tr><th>crate</th><th>role</th></tr>` +
+      crates.map(c => `<tr><td class="c1">${c[0]}</td><td>${c[1]}</td></tr>`).join('');
+
+    const flowSteps = [
+      ['crossterm::event', 'Raw key/resize events'],
+      ['tick thread (mpsc)', '250ms timer ticks, merged in'],
+      ['app.update()', 'Match event → mutate App'],
+      ['ui::draw(&App)', 'Pure render, no mutation'],
+      ['terminal.draw()', 'Diff & flush to screen'],
+    ];
+    const flowTarget = document.getElementById('flow-target');
+    flowSteps.forEach((s, i) => {
+      const box = document.createElement('div'); box.className = 'fbox';
+      box.innerHTML = `<b>${s[0]}</b>${s[1]}`;
+      flowTarget.appendChild(box);
+      if (i < flowSteps.length - 1) {
+        const arrow = document.createElement('div'); arrow.className = 'arrow'; arrow.textContent = '→';
+        flowTarget.appendChild(arrow);
+      }
+    });
+
+    /* ================= CONFIG DATA ================= */
+    document.getElementById('toml-target').innerHTML =
+      `<span class="tok-com"># ~/.config/typetui/config.toml</span>
+
+<span class="tok-key">[test]</span>
+mode        = <span class="tok-str">"words"</span>        <span class="tok-com"># "words" | "time"</span>
+word_count  = <span class="tok-num">50</span>
+time_secs   = <span class="tok-num">30</span>
+punctuation = <span class="tok-num">false</span>
+numbers     = <span class="tok-num">false</span>
+
+<span class="tok-key">[corpus]</span>
+kind        = <span class="tok-str">"language"</span>      <span class="tok-com"># "english" | "custom" | "language"</span>
+language    = <span class="tok-str">"rust"</span>          <span class="tok-com"># rust | c | cpp | python</span>
+custom_file = <span class="tok-str">""</span>
+
+<span class="tok-key">[theme]</span>
+name        = <span class="tok-str">"crt-amber"</span>     <span class="tok-com"># or "custom"</span>
+
+<span class="tok-key">[theme.custom]</span>       <span class="tok-com"># only read if name = "custom"</span>
+bg      = <span class="tok-str">"#171210"</span>
+fg      = <span class="tok-str">"#ffcf87"</span>
+accent  = <span class="tok-str">"#ff7a3d"</span>
+correct = <span class="tok-str">"#9cff8a"</span>
+wrong   = <span class="tok-str">"#ff5c5c"</span>
+muted   = <span class="tok-str">"#8a6a45"</span>
+
+<span class="tok-key">[keybinds]</span>
+quit        = <span class="tok-str">"esc"</span>
+restart     = <span class="tok-str">"ctrl-r"</span>
+cycle_theme = <span class="tok-str">"ctrl-t"</span>
+
+<span class="tok-key">[drills]</span>
+enabled     = <span class="tok-num">true</span>
+sets        = [<span class="tok-str">"vim"</span>, <span class="tok-str">"tmux"</span>]
+chord_timeout_ms = <span class="tok-num">600</span>
+
+<span class="tok-key">[history]</span>
+path        = <span class="tok-str">"~/.local/share/typetui/history.jsonl"</span>
+keep_last_n = <span class="tok-num">500</span>`;
+
+    const fields = [
+      ['[test].mode', '"words" runs a fixed word count; "time" runs a countdown session.'],
+      ['[corpus].kind', 'Chooses the text source feeding the WordFeed iterator.'],
+      ['[corpus].language', 'Only used when kind = "language"; selects the keyword bank.'],
+      ['[theme].name', 'One of the 5 built-ins, or "custom" to read [theme.custom].'],
+      ['[keybinds]', 'Any action can be remapped; parsed into crossterm KeyEvent matchers.'],
+      ['[drills].sets', 'Which keybinding drill packs are available from the mode picker.'],
+      ['[history].keep_last_n', 'Trims history.jsonl on load to bound dashboard/heatmap query cost.'],
+    ];
+    document.getElementById('field-target').innerHTML = `<tr><th>field</th><th>meaning</th></tr>` +
+      fields.map(f => `<tr><td class="k">${f[0]}</td><td>${f[1]}</td></tr>`).join('');
+  </script>
+</body>
+
+</html>
