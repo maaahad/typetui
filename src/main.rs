@@ -2,7 +2,7 @@ use crossterm::{
     execute,
     style::{Color, Print, ResetColor, SetBackgroundColor, SetForegroundColor},
 };
-use ratatui::{DefaultTerminal, Frame};
+use ratatui::{DefaultTerminal, Frame, widgets::Block};
 use std::io::stdout;
 
 fn main() -> color_eyre::Result<()> {
@@ -31,5 +31,5 @@ fn app(terminal: &mut DefaultTerminal) -> std::io::Result<()> {
 }
 
 fn render(frame: &mut Frame) {
-    frame.render_widget("Hello world!!!", frame.area());
+    frame.render_widget(Block::bordered().title("Type Tui"), frame.area());
 }
